@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>客觀三角理財邏輯分析</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #f2f4f7;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .card {
+            background: #ffffff;
+            width: 100%;
+            max-width: 440px;
+            border-radius: 24px;
+            padding: 30px 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        .title {
+            text-align: center;
+            color: #d31145; /* AIA Red */
+            font-size: 24px;
+            font-weight: 800;
+            margin: 0 0 6px 0;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #333333;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 30px;
+        }
+
+        /* 3 個直立滑桿區域 */
+        .sliders-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            height: 220px;
+            margin-bottom: 25px;
+        }
+
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+            width: 30%;
+        }
+
+        .slider-label {
+            font-size: 16px;
+            font-weight: 700;
+            color: #222222;
+            margin-bottom: 15px;
+        }
+
+        /* 直立滑桿容器 */
+        .range-wrapper {
+            position: relative;
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 140px; /* 控制滑桿長度 */
+            height: 10px;
+            background: #e5e5e5;
+            border-radius: 5px;
+            outline: none;
+            transform: rotate(-90deg); /* 轉成直立 */
+            cursor: pointer;
+        }
+
+        /* 滑桿圓鈕（iOS/Chrome） */
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #d31145;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(211, 17, 69, 0.3);
+            border: 2px solid #ffffff;
+        }
+
+        .slider-value {
+            font-size: 15px;
+            font-weight: 700;
+            color: #d31145;
+            margin-top: 15px;
+        }
+
+        /* 下方描述結果卡片 */
+        .result-card {
+            background: #f8f9fa;
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid #edf0f2;
+        }
+
+        .result-title {
+            font-size: 20px;
+            font-weight: 800;
+            color: #111111;
+            margin-bottom: 10px;
+        }
+
+        .result-desc {
+            font-size: 20px;
+            color: #555555;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .result-recommend {
+            background: #fff0f2;
+            border-radius: 12px;
+            padding: 12px 14px;
+            color: #d31145;
+            font-size: 18px;
+            font-weight: 700;
+            line-height: 1.5;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1 class="title">客觀三角理財需求分析</h1>
+    <div class="subtitle">ver.13 內部使用</div>
+
+    <div class="sliders-container">
+        <!-- 風險 -->
+        <div class="slider-group">
+            <div class="slider-label">風險</div>
+            <div class="range-wrapper">
+                <input type="range" id="risk" min="1" max="3" value="1" oninput="updateUI()">
+            </div>
+            <div class="slider-value" id="risk-val">低</div>
+        </div>
+
+        <!-- 回報 -->
+        <div class="slider-group">
+            <div class="slider-label">回報</div>
+            <div class="range-wrapper">
+                <input type="range" id="return" min="1" max="3" value="1" oninput="updateUI()">
+            </div>
+            <div class="slider-value" id="return-val">低</div>
+        </div>
+
+        <!-- 時間 -->
+        <div class="slider-group">
+            <div class="slider-label">時間</div>
+            <div class="range-wrapper">
+                <input type="range" id="time" min="1" max="3" value="1" oninput="updateUI()">
+            </div>
+            <div class="slider-value" id="time-val">中</div>
+        </div>
+    </div>
+
+    <!-- 結果區塊 -->
+    <div class="result-card">
+        <div class="result-title" id="res-title">載入中...</div>
+        <div class="result-desc" id="res-desc">...</div>
+        <div class="result-recommend" id="res-rec">...</div>
+    </div>
+</div>
+
+<script>
+    const labels = ["", "低", "中", "高"];
+    const returnLabels = ["", "低(0-4厘)", "中(4-8厘)", "高(8厘以上)"];
+    const timeLabels = ["", "短", "中", "長"];
+
+    // 🎯【組合對照表】（KEY 格式為：風險_回報_時間）
+    // 例如：1_1_2 代表「風險：低(1) | 回報：低(1) | 時間：中(2)」
+    const dataMatrix = {
+        // --- 低風險 (1_x_x) ---
+        "1_1_1": {
+            title: "一般銀行戶口",
+            desc: "極高流動性與極高安全性。",
+            rec: "💡 建議方案：<br>1. 銀行「零存整付」(約0.4厘) <br>2. 銀行 活期戶口 (約0.02厘)<br><br> #一筆過# 短期定期存款（半年/一年）約2.4厘<br>"
+        },
+        "1_1_2": {
+            title: "資金定點型成長",
+            desc: "束縛短期流動性，追求資金一次性增長，並極具防守性。",
+            rec: "💡 建議方案：<br>月供銀行「2 pay 5」計劃 (約1.2厘)<br><br> #一筆過# 3年期 政府債券 (約3.3厘)"
+        },
+        "1_1_3": {
+            title: "長遠資金成長",
+            desc: "追求低風險，利用時間資本增值資產，防止通脹蠶食購買力。",
+            rec: "💡 建議方案：<br>保險年金計劃+退稅 (約4.5厘)<br><br> #一筆過# 10年或以上政府債券 (約4.1厘)"
+        },
+        "1_2_1": {
+            title: "短期保本理財",
+            desc: "兼顧極高流動性與極高安全性，同時追求4厘或以上回報具挑戰性",
+            rec: "💡 建議方案：<br>1. 美債 ETF (約2-4厘)<br><br> #一筆過# 美國國債 (約4厘)"
+        },
+        "1_2_2": {
+            title: "穩健資產累積型",
+            desc: "發揮時間資本，同時獲得穩定且高於通脹的合理回報。",
+            rec: "💡 建議方案：<br>1. 保險儲蓄計劃 (約5.2厘) <br>2. 貨幣市場基金MMF (約3.8厘)"
+        },
+        "1_2_3": {
+            title: "長線滾存穩健型",
+            desc: "長期資產安全增值與傳承，給予資金充足時間進行複利滾存。",
+            rec: "💡 建議方案：<br>1. 保險儲蓄計劃 (約7厘)<br>2. 可分拆管理保單 (約7.8厘)"
+        },
+        "1_3_1": {
+            title: "短期低風險高回報",
+            desc: "騙局警告",
+            rec: "💡<br> 騙局警告"
+        },
+        "1_3_2": {
+            title: "穩健中線高期望",
+            desc: "在極可控風險下爭取高於8厘回報，存在矛盾",
+            rec: "💡 建議方案：<br>提升可承受風險 或 延長獲利時間"
+        },
+        "1_3_3": {
+            title: "長期複利增長型",
+            desc: "利用複利效果來鎖定穩健的高長期總回報，以時間換取高確定性的資產累積。",
+            rec: "💡 建議方案：<br>1. 長線保險儲蓄計劃 (約8厘)<br>2. 傳承儲蓄保險 (倍數)<br>3. 危疾人壽保險 (倍數)"
+        },
+
+        // --- 中風險 (2_x_x) ---
+        "2_1_1": {
+            title: "彈性防禦型",
+            desc: "能接受波動，但目前以資金流動性為主。",
+            rec: "📌投資涉及風險，不存在必賺不賠📌<br><br>💡 建議方案：<br>1. 短期港元及美元貨幣市場基金投資 (高達4厘)<br>2. 離岸人民幣貨幣市場基金 (高達4厘)"
+        },
+        "2_1_2": {
+            title: "均衡平穩型",
+            desc: "具有投資意志，整體目標平均，在風險與回報之間取得良好平衡。",
+            rec: "📌投資涉及風險，不存在必賺不賠📌<br><br>💡 建議方案：<br>1. 高股息藍籌股 / 房地產信託（REITs）組合 (高達5厘以上)<br>2. 基金保單 保守型 / 平衡型債券基金 (高達6厘以上)"
+        },
+        "2_1_3": {
+            title: "長線通脹蠶食注意",
+            desc: "在理財架構中屬於「效益不對稱」（承擔中等風險，且資金鎖定長時間，但回報過低）",
+            rec: "📌投資涉及風險，不存在必賺不賠📌<br><br>💡 建議方案：<br> 轉為較高回報的保險儲蓄計劃<br> 注意跑輸大市，一直蠶食本金"
+        },
+        "2_2_1": {
+            title: "靈活平衡型",
+            desc: "追求中等回報與中等風險，資金希望保持適度靈活性。",
+            rec: "📌投資涉及風險，不存在必賺不賠📌<br><br>💡 建議方案：<br>A 級企業債券<br> 不宜挑選波動過大的純股票或高槓桿工具"
+        },
+        "2_2_2": {
+            title: "標準均衡配置型",
+            desc: "最經典的理財配置，風險、回報與年期均處於中等黃金平衡點。",
+            rec: "📌投資涉及風險，不存在必賺不賠📌<br><br>💡 建議方案：<br>1. 基金保單 環球股票與債券平衡型基金 / ETF 組合<br>2. 基金保單 投資相連壽險計劃 (高達8厘以上)"
+        },
+        "2_2_3": {
+            title: "積極資產累積型",
+            desc: "願意承擔一定波動以追求更高的長期財富增長，並有給予足夠時間滾存。",
+            rec: "📌投資涉及風險，不存在必賺不賠📌<br><br>💡 建議方案：<br>投資相連壽險 (ILP)(高達8厘以上)<br>2. 基金保單 環球藍籌股 / REITs 組合"
+        },
+        "2_3_1": {
+            title: "波段衝刺型",
+            desc: "追求中短期的高回報，能承受一定程度的資本波動，需注意風險管理",
+            rec: "📌投資涉及風險，不存在必賺不賠📌<br><br>💡 建議方案：<br>高回報伴隨高風險"
+        },
+        "2_3_2": {
+            title: "中期成長型",
+            desc: "希望在中期內累積資本，願意承擔中等風險以換取較高潛力。",
+            rec: "📌投資涉及風險，不存在必賺不賠📌<br><br>💡 建議方案：<br>基金保單 增長型基金組合"
+        },
+        "2_3_3": {
+            title: "長線資產倍增型",
+            desc: "重視長期資本大幅增值，能接受過程中的市場起伏。",
+            rec: "📌投資涉及風險，不存在必賺不賠📌<br><br>💡 建議方案：<br> 基金保單 / 投資相連計劃"
+        },
+
+        // --- 高風險 (3_x_x) ---
+        "3_1_1": {
+            title: "高風險錯配型",
+            desc: "承擔高風險卻僅追求低回報，建議調整投資組合以提升效率。",
+            rec: "📌投資涉及風險，投資產品之價格可升可跌，甚至變成毫無價值📌<br><br>💡 建議方案：<br>重新梳理風險承受度"
+        },
+        "3_1_2": {
+            title: "防守調整型",
+            desc: "承受較高波動但回報預期偏低，建議重新優化資產結構。",
+            rec: "📌投資涉及風險，投資產品之價格可升可跌，甚至變成毫無價值📌<br><br>💡 建議方案：<br>將部分資金轉移至高確定性的分紅保險儲蓄計劃"
+        },
+        "3_1_3": {
+            title: "高波動長期型",
+            desc: "風險承受力高但回報要求保守，適合將精力放在長線資產保全。",
+            rec: "📌投資涉及風險，投資產品之價格可升可跌，甚至變成毫無價值📌<br><br>💡 建議方案：<br>將部分資金轉移至高確定性的分紅保險儲蓄計劃"
+        },
+        "3_2_1": {
+            title: "短線進取型",
+            desc: "追求短期機會，具備極高風險承受能力。",
+            rec: "📌投資涉及風險，投資產品之價格可升可跌，甚至變成毫無價值📌<br><br>💡 建議方案：短線投資"
+        },
+        "3_2_2": {
+            title: "進取成長型",
+            desc: "能承受較高市場波動，追求高於平均水平的資產增長速度。",
+            rec: "📌投資涉及風險，投資產品之價格可升可跌，甚至變成毫無價值📌<br><br>💡 建議方案：<br>股票型基金組合"
+        },
+        "3_2_3": {
+            title: "長線極致增長型",
+            desc: "擁有極高風險承受力與長遠投資眼光，追求極致的長期複利。",
+            rec: "📌投資涉及風險，投資產品之價格可升可跌，甚至變成毫無價值📌<br><br>💡 建議方案：<br>投資相連壽險 高增值基金群(ILP)"
+        },
+        "3_3_1": {
+            title: "短線高博弈型",
+            desc: "追求最高回報，承受極高波動，風險極大。",
+            rec: "📌投資涉及風險，投資產品之價格可升可跌，甚至變成毫無價值📌<br><br>💡 建議方案：博彩<br> 金融衍生產品"
+        },
+        "3_3_2": {
+            title: "高資本增長型",
+            desc: "追求高額回報，具備強大心態應對市場劇烈起伏。",
+            rec: "📌投資涉及風險，投資產品之價格可升可跌，甚至變成毫無價值📌<br><br>💡 建議方案：<br>基金保單 環球激進型基金"
+        },
+        "3_3_3": {
+            title: "高資本增長型 (長線)",
+            desc: "追求最高回報，能夠承受短期的市場劇烈波動，並給予極長沉澱時間。",
+            rec: "📌投資涉及風險，投資產品之價格可升可跌，甚至變成毫無價值📌<br><br>💡 建議方案：<br>基金保單 環球基金投資組合"
+        }
+    };
+
+    function updateUI() {
+        // 1. 取得三個滑桿的值
+        const r = document.getElementById('risk').value;
+        const ret = document.getElementById('return').value;
+        const t = document.getElementById('time').value;
+
+        // 2. 更新滑桿下方文字
+        document.getElementById('risk-val').innerText = labels[r];
+        document.getElementById('return-val').innerText = returnLabels[ret];
+        document.getElementById('time-val').innerText = timeLabels[t];
+
+        // 3. 組合出 Key (例如 "1_1_2")
+        const key = `${r}_${ret}_${t}`;
+
+        // 4. 從資料庫直接取出對應結果 (如果找不到就顯示預設)
+        const result = dataMatrix[key] || {
+            title: "客製化配置型",
+            desc: "根據您的獨特偏好，建議進行進一步專業個案分析。",
+            rec: "💡 建議方案：<br>綜合理財規劃與風險評估"
+        };
+
+        // 5. 渲染至畫面上
+        document.getElementById('res-title').innerText = result.title;
+        document.getElementById('res-desc').innerText = result.desc;
+        document.getElementById('res-rec').innerHTML = result.rec;
+    }
+
+    // 頁面初次載入執行一次
+    updateUI();
+</script>
+
+</body>
+</html>
