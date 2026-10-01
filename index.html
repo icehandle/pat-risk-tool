@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JSFiddle xz63bysm</title>
+
+  <style>
+    
+  </style>
+
+  
+</head>
+<body>
+  <!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客戶理財需求分析工具</title>
+    <style>
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        body { background-color: #f4f6f9; display: flex; justify-content: center; padding: 20px; margin: 0; }
+        .card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); width: 100%; max-width: 500px; }
+        h2 { text-align: center; color: #d31145; margin-bottom: 25px; font-size: 22px; }
+        
+        .sliders-container { display: flex; justify-content: space-around; margin-bottom: 30px; height: 260px; }
+        .slider-group { display: flex; flex-direction: column; align-items: center; width: 30%; }
+        .slider-label { font-weight: bold; font-size: 16px; margin-bottom: 10px; color: #333; }
+        .slider-value { font-size: 14px; color: #d31145; font-weight: bold; margin-top: 10px; }
+        
+        /* 直立式滑桿樣式 */
+        .slider-wrapper { height: 180px; display: flex; align-items: center; }
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 160px;
+            height: 10px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            outline: none;
+            transform: rotate(-90deg);
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #d31145;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        
+        .result-box {
+            background: #fafafa;
+            border: 2px solid #eef0f2;
+            border-radius: 12px;
+            padding: 18px;
+            min-height: 120px;
+        }
+        .result-title { font-weight: bold; font-size: 16px; color: #111; margin-bottom: 8px; }
+        .result-text { font-size: 14px; color: #555; line-height: 1.6; }
+        .upsell-tag {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 4px 10px;
+            background-color: #fff0f2;
+            color: #d31145;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>理財及保障需求分析</h2>
+    
+    <div class="sliders-container">
+        <!-- 風險滑桿 -->
+        <div class="slider-group">
+            <div class="slider-label">風險</div>
+            <div class="slider-wrapper">
+                <input type="range" id="risk" min="1" max="3" value="1" oninput="updateAnalysis()">
+            </div>
+            <div class="slider-value" id="risk-val">低</div>
+        </div>
+
+        <!-- 回報滑桿 -->
+        <div class="slider-group">
+            <div class="slider-label">回報</div>
+            <div class="slider-wrapper">
+                <input type="range" id="return" min="1" max="3" value="2" oninput="updateAnalysis()">
+            </div>
+            <div class="slider-value" id="return-val">中</div>
+        </div>
+
+        <!-- 時間滑桿 -->
+        <div class="slider-group">
+            <div class="slider-label">時間</div>
+            <div class="slider-wrapper">
+                <input type="range" id="time" min="1" max="3" value="3" oninput="updateAnalysis()">
+            </div>
+            <div class="slider-value" id="time-val">長</div>
+        </div>
+    </div>
+
+    <!-- 動態描述框 -->
+    <div class="result-box">
+        <div class="result-title" id="desc-title">分析結果</div>
+        <div class="result-text" id="desc-text">請拉動上方滑桿進行分析...</div>
+        <div id="upsell-container"></div>
+    </div>
+</div>
+
+<script>
+    const labels = ["", "低", "中", "高"];
+    const timeLabels = ["", "短", "中", "長"];
+
+    function updateAnalysis() {
+        const risk = parseInt(document.getElementById('risk').value);
+        const ret = parseInt(document.getElementById('return').value);
+        const time = parseInt(document.getElementById('time').value);
+
+        document.getElementById('risk-val').innerText = labels[risk];
+        document.getElementById('return-val').innerText = labels[ret];
+        document.getElementById('time-val').innerText = timeLabels[time];
+
+        let title = "";
+        let text = "";
+        let upsell = "";
+
+        // 邏輯判斷與建議
+        if (risk === 1 && time === 3) {
+            title = "穩健長線增值型";
+            text = "您傾向追求低風險，同時希望利用時間效果滾存穩定資產。這類規劃最適合透過長期儲蓄的複利效應達成財務目標。";
+            upsell = "💡 建議方案：多元貨幣儲蓄計劃（如盈御/特級儲蓄系列）";
+        } else if (risk === 1 && time <= 2) {
+            title = "極速資金防護型";
+            text = "您需要資金具備高流動性與極高安全性，不希望本金有任何波動風險。";
+            upsell = "💡 建議方案：高日額醫療/基本危疾保障（先把底層風險鎖定，留資本做彈性配置）";
+        } else if (risk >= 2 && ret >= 2 && time === 3) {
+            title = "積極資產累積型";
+            text = "您願意承擔一定波動以追求更高的長期財富增長，並能給予投資足夠的時間進行市場滾存。";
+            upsell = "💡 建議方案：投資相連壽險 (ILP) 或 搭配高槓桿高額危疾險作為資產後盾";
+        } else if (risk === 3 && ret === 3) {
+            title = "高資本增長型";
+            text = "追求最高回報，能夠承受短期的市場劇烈波動。建議在配置高風險資產前，先做好防守性保障。";
+            upsell = "💡 建議方案：環球基金投資組合 + 尊尚醫療保障（確保不因健康突發事件被迫變現投資）";
+        } else {
+            title = "均衡配置型";
+            text = "您的目標相對平均，希望在風險、回報與投資時間之間取得最佳平衡點。";
+            upsell = "💡 建議方案：分紅儲蓄險 + 綜合醫療保障組合";
+        }
+
+        document.getElementById('desc-title').innerText = title;
+        document.getElementById('desc-text').innerText = text;
+        document.getElementById('upsell-container').innerHTML = `<div class="upsell-tag">${upsell}</div>`;
+    }
+
+    // 初始化執行一次
+    updateAnalysis();
+</script>
+
+</body>
+</html>
+
+  <script>
+    
+  </script>
+</body>
+</html>
